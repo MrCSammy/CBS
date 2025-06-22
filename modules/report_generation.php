@@ -2,6 +2,9 @@
 include_once "../config/database.php";
 include_once "../includes/header.php";
 
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 // Fetch statistics for reports
 
 // Query for unpaid bills count
@@ -17,7 +20,7 @@ $query_total_bills = "SELECT COUNT(*) AS total_bills FROM bills";
 $result_total_bills = $conn->query($query_total_bills)->fetch_assoc();
 
 // Handle NULL for total_revenue
-$total_revenue = $result_revenue['total_revenue'] ?? 0; // Default to 0 if no revenue is found
+$total_revenue = isset($result_revenue['total_revenue']) ? $result_revenue['total_revenue'] : 0;
 ?>
 
 <div class="container mt-5">

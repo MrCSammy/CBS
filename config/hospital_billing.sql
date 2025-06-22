@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1:3306
--- Generation Time: Jun 22, 2025 at 08:11 PM
+-- Generation Time: Jun 22, 2025 at 11:23 PM
 -- Server version: 9.1.0
 -- PHP Version: 8.3.14
 
@@ -38,14 +38,31 @@ CREATE TABLE IF NOT EXISTS `bills` (
   `amount` decimal(10,2) NOT NULL,
   PRIMARY KEY (`id`),
   KEY `patient_id` (`patient_id`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=6 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `bills`
 --
 
 INSERT INTO `bills` (`id`, `patient_id`, `total_amount`, `date`, `status`, `service`, `amount`) VALUES
-(1, 1, 0.00, '2025-04-19 16:06:12', 'Paid', 'WOUNDS', 5000.00);
+(1, 1, 0.00, '2025-04-19 16:06:12', 'Paid', 'WOUNDS', 5000.00),
+(2, 2, 0.00, '2025-06-22 21:31:18', 'Paid', 'WOUNDS', 32445.00),
+(5, 1, 0.00, '2025-06-23 00:21:15', 'Unpaid', 'surgery', 20000.00);
+
+--
+-- Triggers `bills`
+--
+DROP TRIGGER IF EXISTS `update_revenue_on_paid`;
+DELIMITER $$
+CREATE TRIGGER `update_revenue_on_paid` AFTER UPDATE ON `bills` FOR EACH ROW BEGIN
+    IF NEW.status = 'Paid' THEN
+        UPDATE bills
+        SET total_amount = total_amount + NEW.amount
+        WHERE id = NEW.id;
+    END IF;
+END
+$$
+DELIMITER ;
 
 -- --------------------------------------------------------
 
@@ -64,14 +81,15 @@ CREATE TABLE IF NOT EXISTS `patients` (
   `address` text,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=MyISAM AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `patients`
 --
 
 INSERT INTO `patients` (`id`, `name`, `age`, `gender`, `phone`, `email`, `address`) VALUES
-(1, 'Daniel Davis', 22, 'Male', '', NULL, '10, hon tokunbo ...');
+(1, 'Daniel Davis', 22, 'Male', '', NULL, '10, hon tokunbo ...'),
+(2, 'Smart Samuel', 12, 'Male', '', NULL, 'wqe23c  g fd ');
 
 -- --------------------------------------------------------
 
@@ -120,7 +138,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `email` (`email`)
-) ENGINE=MyISAM AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=MyISAM AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Dumping data for table `users`
@@ -128,7 +146,8 @@ CREATE TABLE IF NOT EXISTS `users` (
 
 INSERT INTO `users` (`id`, `name`, `email`, `password`, `created_at`) VALUES
 (1, 'Samuel Smart', 'smartsamuel017@gmail.com', '$2y$10$VIqeoidtR0sWccvOaN5aGOJcQbNk0RTbpBE9YICJqOv9yTCf3HJda', '2025-04-19 11:46:20'),
-(2, 'Paul Idagu', 'Mrcapablesammy@gmail.com', '$2y$10$hK/Y0/QOf6g1haqFtmSYKuksciGABB5Uu38eTGQXNl6l1ZAcmrnui', '2025-04-19 14:46:45');
+(2, 'Paul Idagu', 'Mrcapablesammy@gmail.com', '$2y$10$hK/Y0/QOf6g1haqFtmSYKuksciGABB5Uu38eTGQXNl6l1ZAcmrnui', '2025-04-19 14:46:45'),
+(3, 'banking_db', 'Paschal@mail.com', '$2y$10$VwSkE7gQdelCQyhuFBTqwOYbG6RrDgbpozllFbvwsOyAajlBBVpGy', '2025-06-22 20:14:02');
 COMMIT;
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
