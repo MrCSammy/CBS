@@ -3,6 +3,7 @@ include_once "../config/database.php";
 include_once "../includes/header.php";
 
 // Fetch statistics for reports
+
 // Query for unpaid bills count
 $query_unpaid_bills = "SELECT COUNT(*) AS unpaid_bills FROM bills WHERE status = 'Unpaid'";
 $result_unpaid_bills = $conn->query($query_unpaid_bills)->fetch_assoc();
@@ -14,6 +15,9 @@ $result_revenue = $conn->query($query_revenue)->fetch_assoc();
 // Query for total bills count
 $query_total_bills = "SELECT COUNT(*) AS total_bills FROM bills";
 $result_total_bills = $conn->query($query_total_bills)->fetch_assoc();
+
+// Handle NULL for total_revenue
+$total_revenue = $result_revenue['total_revenue'] ?? 0; // Default to 0 if no revenue is found
 ?>
 
 <div class="container mt-5">
@@ -29,7 +33,7 @@ $result_total_bills = $conn->query($query_total_bills)->fetch_assoc();
     <h4>Unpaid Bills: <?= $result_unpaid_bills['unpaid_bills'] ?></h4>
     
     <!-- Display total revenue -->
-    <h4>Total Revenue: ₦<?= number_format($result_revenue['total_revenue'], 2) ?: '0.00' ?></h4>
+    <h4>Total Revenue: ₦<?= number_format($total_revenue, 2) ?></h4>
 </div>
 
 <?php include_once "../includes/footer.php"; ?>
