@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_bill'])) {
     $service = $_POST['service'];
     $amount = $_POST['amount'];
 
-    $query = "INSERT INTO bills (patient_id, service, amount, status) VALUES (?, ?, ?, 'Unpaid')";
+    $query = "INSERT INTO bills (patient_id, service, amount, total_amount, status) VALUES (?, ?, ?, 0, 'Unpaid')";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("isd", $patient_id, $service, $amount);
 
@@ -26,12 +26,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_bill'])) {
     }
 }
 
-// Handle bill payment update
+// Handle bill payment update (no direct revenue update here, trigger will handle it)
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_payment'])) {
     $bill_id = $_POST['bill_id'];
     $new_status = $_POST['status'];
 
-    $fetch_status_query = "SELECT status, amount FROM bills WHERE id = ?";
+    $fetch_status_query = "SELECT status FROM bills WHERE id = ?";
     $stmt_fetch = $conn->prepare($fetch_status_query);
     $stmt_fetch->bind_param("i", $bill_id);
     $stmt_fetch->execute();
@@ -39,22 +39,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_payment'])) {
 
     if ($result) {
         $current_status = $result['status'];
-        $amount = $result['amount'];
 
-        $update_status_query = "UPDATE bills SET status = ? WHERE id = ?";
-        $stmt_update = $conn->prepare($update_status_query);
-        $stmt_update->bind_param("si", $new_status, $bill_id);
-
-        if ($stmt_update->execute()) {
-            if ($current_status === 'Unpaid' && $new_status === 'Paid') {
-                $update_revenue_query = "UPDATE revenue_summary SET total_revenue = total_revenue + ? WHERE id = 1";
-                $stmt_revenue = $conn->prepare($update_revenue_query);
-                $stmt_revenue->bind_param("d", $amount);
-                $stmt_revenue->execute();
-            }
-            $success = "Bill status updated successfully!";
+        if ($current_status === $new_status) {
+            $error = "Bill is already marked as $new_status.";
         } else {
-            $error = "Failed to update bill status.";
+            $update_status_query = "UPDATE bills SET status = ? WHERE id = ?";
+            $stmt_update = $conn->prepare($update_status_query);
+            $stmt_update->bind_param("si", $new_status, $bill_id);
+
+            if ($stmt_update->execute()) {
+                $success = "Bill status updated successfully! (Revenue automatically handled)";
+            } else {
+                $error = "Failed to update bill status.";
+            }
         }
     } else {
         $error = "Bill not found.";
@@ -62,7 +59,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_payment'])) {
 }
 
 // Fetch existing bills
-$bills_query = "SELECT b.id, p.name AS patient_name, b.service, b.amount, b.status FROM bills b JOIN patients p ON b.patient_id = p.id";
+$bills_query = "SELECT b.id, p.name AS patient_name, b.service, b.amount, b.total_amount, b.status 
+                FROM bills b 
+                JOIN patients p ON b.patient_id = p.id
+                ORDER BY b.id DESC";
 $bills = $conn->query($bills_query)->fetch_all(MYSQLI_ASSOC);
 ?>
 
