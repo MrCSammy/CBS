@@ -26,31 +26,42 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_bill'])) {
     }
 }
 
-// Handle bill payment update (no direct revenue update here, trigger will handle it)
+// Handle bill payment update and revenue calculation
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_payment'])) {
     $bill_id = $_POST['bill_id'];
     $new_status = $_POST['status'];
 
-    $fetch_status_query = "SELECT status FROM bills WHERE id = ?";
-    $stmt_fetch = $conn->prepare($fetch_status_query);
-    $stmt_fetch->bind_param("i", $bill_id);
-    $stmt_fetch->execute();
-    $result = $stmt_fetch->get_result()->fetch_assoc();
+    // Fetch the bill details
+    $fetch_query = "SELECT amount, total_amount, status FROM bills WHERE id = ?";
+    $stmt = $conn->prepare($fetch_query);
+    $stmt->bind_param("i", $bill_id);
+    $stmt->execute();
+    $result = $stmt->get_result()->fetch_assoc();
 
     if ($result) {
         $current_status = $result['status'];
+        $current_total = $result['total_amount'];
+        $amount = $result['amount'];
 
         if ($current_status === $new_status) {
-            $error = "Bill is already marked as $new_status.";
+            $error = "This bill is already marked as $new_status.";
         } else {
-            $update_status_query = "UPDATE bills SET status = ? WHERE id = ?";
-            $stmt_update = $conn->prepare($update_status_query);
-            $stmt_update->bind_param("si", $new_status, $bill_id);
-
-            if ($stmt_update->execute()) {
-                $success = "Bill status updated successfully! (Revenue automatically handled)";
+            // Update status and total_amount if status changed to Paid
+            if ($new_status === 'Paid') {
+                $new_total = $current_total + $amount;
             } else {
-                $error = "Failed to update bill status.";
+                $new_total = $current_total - $amount; // Optional: if changing back to Unpaid
+                if ($new_total < 0) $new_total = 0; // Prevent negative total
+            }
+
+            $update_query = "UPDATE bills SET status = ?, total_amount = ? WHERE id = ?";
+            $stmt_up = $conn->prepare($update_query);
+            $stmt_up->bind_param("sdi", $new_status, $new_total, $bill_id);
+
+            if ($stmt_up->execute()) {
+                $success = "Bill status updated successfully.";
+            } else {
+                $error = "Failed to update bill.";
             }
         }
     } else {
